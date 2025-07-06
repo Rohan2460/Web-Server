@@ -32,39 +32,49 @@ class HttpServer:
         request.address = addr
 
         while b'\r\n\r\n' not in raw_request:
-            raw_request += conn.recv(256)
+            part = conn.recv(256)
+            if not part:
+                break
+            raw_request += part 
 
-        raw_request = raw_request.decode()
-        index1 = raw_request.index(" ")
-        index_body_start = raw_request.index("\r\n\r\n")
+        header_part, _, body_part = raw_request.partition(b"\r\n\r\n")
+        header_str = header_part.decode()
 
-        request.method = HttpMethod[raw_request[:index1]]
-        request.url = raw_request[index1 + 1: raw_request.index(" ", index1 + 1)]
+        lines = header_str.split("\r\n")
+        request_line = lines[0]
+        method, url, _ = request_line.split(" ")
+        request.method = HttpMethod[method]
+        request.url = url
 
-        for line in raw_request.split("\n"):
-            if line.startswith("Content-Length"):
-                index = line.index("Content-Length") + len("Content-Length: ") 
-                headers["content_length"] = int(line[index:])
 
-        if request.method == "POST":
-            extra_size = len(raw_request) - len(raw_request[:index_body_start])
-            remaining_size =  headers["content_length"] - extra_size
-            data = raw_request[:index_body_start].encode() + conn.recv(remaining_size)
-            request.body = data
+        for line in lines[1:]:
+            line = line.lower()
+            if line.startswith("content-length"):
+
+                key, value = line.split(":")
+                headers["content_length"] = int(value.strip())
 
         request.headers = headers
+
+        if request.method == "POST":
+            body = body_part
+            content_length = headers.get("content_length", 0)
+
+            while len(body) < content_length:
+                part = conn.recv(content_length - len(body)) 
+                if not part:
+                    break
+                body += part
+
+            request.body = body
+
         return request
 
 
-    def send_file(self, conn):
-        with open("index.html", "r") as fp:
+    def send_file(self, req, file):
+        with open(file, "r") as fp:
             res = fp.read()
-            header = "HTTP/1.1 200 OK\n" \
-            "Content-Type: text/html; charset=utf-8\n" \
-            "Content-Length: {}\n\n".format(len(res))
-
-            res = header + res
-            conn.send(res.encode())
+            return self.html_response(req, res)
 
 
     def html_response(self, req: HttpRequest, text:str = ""):
