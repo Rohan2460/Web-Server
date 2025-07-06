@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Dict
 
+
 class HttpMethod(str, Enum):
     GET  = "GET"
     POST = "POST"
@@ -15,6 +16,7 @@ class HttpStatus(Enum):
 class ContentTypes(str, Enum):
     HTML = "text/html"
     PLAIN = "text/plain"
+    JSON = "application/json"
 
 
 class UploadedFile:

@@ -48,13 +48,11 @@ class HttpServer:
         for line in lines[1:]:
             line = line.lower()
 
-            if line.startswith("content-length"):
-                key, value = line.split(":")
-                headers["content-length"] = int(value.strip())
-            else:
-                key, value = line.split(": ")
-                headers[key.lower()] = value.strip()
-        
+            key, value = line.split(":")
+            key, value = line.split(": ")
+            headers[key.lower()] = value.strip()
+            headers["content-length"] = int(headers["content-length"])
+
         request.headers = headers
 
         if request.method == "POST":
@@ -109,13 +107,13 @@ class HttpServer:
 
         return files
 
-    def send_file(self, req, file):
-        with open(file, "r") as fp:
+    def send_file(self, request: HttpRequest, file_path):
+        with open(file_path, "r") as fp:
             res = fp.read()
-            return self.html_response(req, res)
+            return self.html_response(request, res)
 
-    def html_response(self, req: HttpRequest, text:str = ""):
-        return HttpResponse(HttpStatus.OK, ContentTypes.HTML, text, req.method)
+    def html_response(self, request: HttpRequest, text:str = ""):
+        return HttpResponse(HttpStatus.OK, ContentTypes.HTML, text, request.method)
 
     def log_request(self, method, status, url, addr):
         print(f"[{status}] {addr[0]} {method.value} {url}")
