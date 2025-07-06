@@ -1,5 +1,5 @@
 from enum import Enum
-
+from typing import Dict
 
 class HttpMethod(str, Enum):
     GET  = "GET"
@@ -17,11 +17,19 @@ class ContentTypes(str, Enum):
     PLAIN = "text/plain"
 
 
+class UploadedFile:
+    def __init__(self, filename, data):
+        self.filename = filename
+        self.data = data
+
+
 class HttpRequest:
     method = HttpMethod
     url = ""
     headers = {}
     body = ""
+    form_data = {}
+    files: Dict[str, UploadedFile] = {}
     address = None
 
 
@@ -32,7 +40,6 @@ class HttpResponse:
     body = b""
     request_method = HttpMethod
     
-    #TODO: replace with property funtion
     def __init__(self, status: HttpStatus = None, content_type: ContentTypes = None, body: str = "", request_method: HttpMethod = None):
         self.request_method = request_method
         self.content_type = content_type
@@ -47,5 +54,3 @@ class HttpResponse:
         
     def __str__(self):
         return self.response
-
-    
